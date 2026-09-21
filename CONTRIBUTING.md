@@ -10,7 +10,7 @@ Thanks for helping. Full guide: [klag.dev/development/contributing](https://klag
    ```bash
    ./gradlew test
    ```
-   Helm chart changes also need `./scripts/test-helm-chart.sh`. Website/docs changes: `cd website && npm ci && npm test`.
+   Helm chart changes also need `./scripts/test-helm-chart.sh`. Website/docs changes: `cd website && npm ci && npm test && npm run check`.
 4. Open a pull request that links the issue.
 
 ## Quality bar

@@ -17,7 +17,7 @@ Contributions are welcome. Prefer a **linked GitHub issue** over an unsolicited 
 
 See [Build from Source](/development/build/) for Helm, e2e, native-image, and website commands.
 
-For Hacktoberfest, use the filtered board above (and the pinned contributor-board issue on GitHub). Issues are curated.
+For Hacktoberfest, use the [`hacktoberfest`](https://github.com/themoah/klag/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest) issue list and the pinned [contributor board](https://github.com/themoah/klag/issues/97). Issues are curated.
 
 ## Workflow
 
