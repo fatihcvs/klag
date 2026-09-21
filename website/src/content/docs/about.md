@@ -56,6 +56,12 @@ see [pricing](https://klag.dev/pricing.md).
 Support is community support, through GitHub issues. There is no commercial support contract
 and no SLA; if you need one, the license lets you run and modify Klag however you like.
 
+## Using Klag in production?
+
+If you run Klag in production and are willing to say so (named or anonymous), leave a note on
+[Using Klag in production?](https://github.com/themoah/klag/issues/96). Opt-in listing only —
+see [ADOPTERS.md](https://github.com/themoah/klag/blob/main/ADOPTERS.md).
+
 ## For AI agents
 
 The documentation is published in machine-readable form at [/llms.txt](https://klag.dev/llms.txt)
