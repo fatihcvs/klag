@@ -11,6 +11,30 @@ time-lag units differ.
 Use the mapping below, then update Prometheus relabeling, dashboards, and alerts before
 cutting traffic over.
 
+## Cutover checklist
+
+1. **Run both exporters.** Deploy Klag alongside kafka-lag-exporter for the same clusters
+   and consumer groups, and scrape Klag's `/metrics` under a separate Prometheus job.
+   Confirm the expected groups and topics appear, and review
+   [member labels and cardinality](#member-labels-and-cardinality) before keeping the
+   default member labels.
+2. **Update PromQL and labels.** Use the [metric name mapping](#metric-name-mapping)
+   below and replace `group` with `consumer_group` in selectors and aggregations (or use
+   the [temporary relabel rule](#relabel-during-the-transition)). Divide
+   `klag_consumer_lag_ms` by 1000 where queries expect seconds. Preserve the intended
+   aggregation: Klag's lag sum/max rollups are per group and topic; time-lag topic
+   rollups use `klag_consumer_lag_ms{partition=""}`, while partition series use
+   `{partition!=""}`. Keep `cluster_name` in aggregations when comparing multiple clusters.
+3. **Validate dashboards and alerts.** Update Grafana variables, panels, recording rules,
+   and alert expressions, including units and thresholds. Compare both exporters for
+   the same cluster, group, and topic over several collection cycles before switching
+   alerting to Klag; [time-lag estimates differ](#time-based-lag-is-different), so do not
+   require identical time-lag values.
+4. **Complete the cutover.** Once dashboards and alerts use Klag successfully, disable
+   the old alert rules and remove kafka-lag-exporter from Prometheus scrape targets.
+   Keep Klag scraping enabled, retire the old exporter, and remove the temporary `group`
+   alias once all queries use `consumer_group`.
+
 ## Metric name mapping
 
 Klag exports through Micrometer; the Prometheus names below are what you scrape (dots
