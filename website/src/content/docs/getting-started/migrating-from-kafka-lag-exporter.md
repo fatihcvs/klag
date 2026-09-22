@@ -44,13 +44,18 @@ become underscores):
 |---|---|---|
 | `kafka_consumergroup_group_lag` | `klag_consumer_lag` | per partition |
 | `kafka_consumergroup_group_topic_sum_lag` | `klag_consumer_lag_sum` | per group+topic |
-| `kafka_consumergroup_group_sum_lag` | `sum by (consumer_group)(klag_consumer_lag_sum)` | Klag derives the group total from topic rollups |
-| `kafka_consumergroup_group_max_lag` | `klag_consumer_lag_max` | per group+topic; group max: `max by (consumer_group)(klag_consumer_lag_max)` |
+| `kafka_consumergroup_group_sum_lag` | `sum by (cluster_name, consumer_group) (klag_consumer_lag_sum)` | Klag derives the group total from topic rollups |
+| `kafka_consumergroup_group_max_lag` | `klag_consumer_lag_max` | per group+topic; group max: `max by (cluster_name, consumer_group) (klag_consumer_lag_max)` |
 | `kafka_consumergroup_group_offset` | `klag_consumer_committed_offset` | committed offset |
 | `kafka_partition_latest_offset` | `klag_partition_log_end_offset` | partition end |
 | `kafka_partition_earliest_offset` | `klag_partition_log_start_offset` | partition start |
 | `kafka_consumergroup_group_lag_seconds` | `klag_consumer_lag_ms` | Klag reports milliseconds; divide by 1000 for seconds |
-| `kafka_consumergroup_group_max_lag_seconds` | `max by (consumer_group) (klag_consumer_lag_ms{partition=""}) / 1000` | Klag exposes topic-level max rollups separately from partition series |
+| `kafka_consumergroup_group_max_lag_seconds` | `max by (cluster_name, consumer_group) (klag_consumer_lag_ms{partition=""}) / 1000` | Klag exposes topic-level max rollups separately from partition series |
+
+The aggregation examples retain `cluster_name` so same-named consumer groups in different
+clusters stay separate. Set `KAFKA_CLUSTER_NAME` or `KAFKA_CLUSTERS[].name` as described in
+the [label mapping](#label-mapping). For a single unnamed cluster, these queries also work
+without a `cluster_name` label.
 
 The archived exporter has no minimum-lag aggregate. Klag's
 `klag_consumer_lag_min` therefore has no source metric to map.
