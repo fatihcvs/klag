@@ -13,15 +13,15 @@ read-only ACLs described in [ACL Permissions](/kafka/acl-permissions/).
 Get the bootstrap server from the Confluent Cloud Console under **Cluster >
 Clients**. Keep the API key and secret outside source control and inject them at
 runtime. For a local process or container, set the Kafka client properties
-through Klag's environment variables. In a Bash shell, enter both credentials
+through Klag's environment variables. In Bash or zsh, enter both credentials
 without echoing them or putting their values in shell history:
 
 ```bash
 export KAFKA_BOOTSTRAP_SERVERS="<bootstrap-server>:9092"
 export KAFKA_SECURITY_PROTOCOL="SASL_SSL"
 export KAFKA_SASL_MECHANISM="PLAIN"
-read -r -s -p "Kafka API key: " KAFKA_API_KEY; printf '\n'
-read -r -s -p "Kafka API secret: " KAFKA_API_SECRET; printf '\n'
+printf 'Kafka API key: '; read -r -s KAFKA_API_KEY; printf '\n'
+printf 'Kafka API secret: '; read -r -s KAFKA_API_SECRET; printf '\n'
 export KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username='$KAFKA_API_KEY' password='$KAFKA_API_SECRET';"
 unset KAFKA_API_KEY KAFKA_API_SECRET
 ```
@@ -41,9 +41,10 @@ docker run --rm \
 ```
 
 The JAAS config is still visible to anyone with access to the process or
-Docker container environment. Restrict that access, and clear the exported
-variable with `unset KAFKA_SASL_JAAS_CONFIG` when finished. For a long-lived
-deployment, use your platform's secret manager.
+Docker container environment. Restrict that access. If you only use Docker,
+run `unset KAFKA_SASL_JAAS_CONFIG` after the container exits. If you also use
+Helm, keep the variable set until the Secret is created below. For a
+long-lived deployment, use your platform's secret manager.
 
 ## Helm with an existing Secret
 
@@ -55,11 +56,14 @@ in the `kubectl` arguments or a local credentials file:
 ```bash
 printf '%s' "$KAFKA_SASL_JAAS_CONFIG" | \
   kubectl create secret generic klag-kafka --from-file=jaas-config=/dev/stdin
+unset KAFKA_SASL_JAAS_CONFIG
 ```
 
 Install or upgrade Klag with the cluster connection settings and Secret reference:
 
 ```bash
+helm repo add klag https://themoah.github.io/klag
+helm repo update
 helm upgrade --install klag klag/klag \
   --set kafka.bootstrapServers="<bootstrap-server>:9092" \
   --set kafka.securityProtocol="SASL_SSL" \
