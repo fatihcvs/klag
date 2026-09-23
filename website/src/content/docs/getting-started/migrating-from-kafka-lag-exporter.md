@@ -11,6 +11,30 @@ time-lag units differ.
 Use the mapping below, then update Prometheus relabeling, dashboards, and alerts before
 cutting traffic over.
 
+## Cutover checklist
+
+1. **Run both exporters.** Deploy Klag alongside kafka-lag-exporter for the same clusters
+   and consumer groups, and scrape Klag's `/metrics` under a separate Prometheus job.
+   Confirm the expected groups and topics appear, and review
+   [member labels and cardinality](#member-labels-and-cardinality) before keeping the
+   default member labels.
+2. **Update PromQL and labels.** Use the [metric name mapping](#metric-name-mapping)
+   below and replace `group` with `consumer_group` in selectors and aggregations (or use
+   the [temporary relabel rule](#relabel-during-the-transition)). Divide
+   `klag_consumer_lag_ms` by 1000 where queries expect seconds. Preserve the intended
+   aggregation: Klag's lag sum/max rollups are per group and topic; time-lag topic
+   rollups use `klag_consumer_lag_ms{partition=""}`, while partition series use
+   `{partition!=""}`. Keep `cluster_name` in aggregations when comparing multiple clusters.
+3. **Validate dashboards and alerts.** Update Grafana variables, panels, recording rules,
+   and alert expressions, including units and thresholds. Compare both exporters for
+   the same cluster, group, and topic over several collection cycles before switching
+   alerting to Klag; [time-lag estimates differ](#time-based-lag-is-different), so do not
+   require identical time-lag values.
+4. **Complete the cutover.** Once dashboards and alerts use Klag successfully, disable
+   the old alert rules and remove kafka-lag-exporter from Prometheus scrape targets.
+   Keep Klag scraping enabled, retire the old exporter, and remove the temporary `group`
+   alias once all queries use `consumer_group`.
+
 ## Metric name mapping
 
 Klag exports through Micrometer; the Prometheus names below are what you scrape (dots
@@ -20,13 +44,18 @@ become underscores):
 |---|---|---|
 | `kafka_consumergroup_group_lag` | `klag_consumer_lag` | per partition |
 | `kafka_consumergroup_group_topic_sum_lag` | `klag_consumer_lag_sum` | per group+topic |
-| `kafka_consumergroup_group_sum_lag` | `sum by (consumer_group)(klag_consumer_lag_sum)` | Klag derives the group total from topic rollups |
-| `kafka_consumergroup_group_max_lag` | `klag_consumer_lag_max` | per group+topic; group max: `max by (consumer_group)(klag_consumer_lag_max)` |
+| `kafka_consumergroup_group_sum_lag` | `sum by (cluster_name, consumer_group) (klag_consumer_lag_sum)` | Klag derives the group total from topic rollups |
+| `kafka_consumergroup_group_max_lag` | `klag_consumer_lag_max` | per group+topic; group max: `max by (cluster_name, consumer_group) (klag_consumer_lag_max)` |
 | `kafka_consumergroup_group_offset` | `klag_consumer_committed_offset` | committed offset |
 | `kafka_partition_latest_offset` | `klag_partition_log_end_offset` | partition end |
 | `kafka_partition_earliest_offset` | `klag_partition_log_start_offset` | partition start |
 | `kafka_consumergroup_group_lag_seconds` | `klag_consumer_lag_ms` | Klag reports milliseconds; divide by 1000 for seconds |
-| `kafka_consumergroup_group_max_lag_seconds` | `max by (consumer_group) (klag_consumer_lag_ms{partition=""}) / 1000` | Klag exposes topic-level max rollups separately from partition series |
+| `kafka_consumergroup_group_max_lag_seconds` | `max by (cluster_name, consumer_group) (klag_consumer_lag_ms{partition=""}) / 1000` | Klag exposes topic-level max rollups separately from partition series |
+
+The aggregation examples retain `cluster_name` so same-named consumer groups in different
+clusters stay separate. Set `KAFKA_CLUSTER_NAME` or `KAFKA_CLUSTERS[].name` as described in
+the [label mapping](#label-mapping). For a single unnamed cluster, these queries also work
+without a `cluster_name` label.
 
 The archived exporter has no minimum-lag aggregate. Klag's
 `klag_consumer_lag_min` therefore has no source metric to map.
