@@ -16,6 +16,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -99,7 +100,7 @@ public class McpTools {
         .put("group", g.consumerGroup())
         .put("state", g.state().toMetricValue())
         .put("totalLag", g.totalLag())
-        .put("overallTrend", g.overallTrend().name().toLowerCase())
+        .put("overallTrend", g.overallTrend().name().toLowerCase(Locale.ROOT))
         .put("topics", topicCount(g)));
     }
     JsonObject body = new JsonObject()
@@ -140,7 +141,7 @@ public class McpTools {
       .put("partitions", partitions)
       .put("velocity", velocityArray(g.velocities()))
       .put("trends", trendArray(g.trends()))
-      .put("overallTrend", g.overallTrend().name().toLowerCase())
+      .put("overallTrend", g.overallTrend().name().toLowerCase(Locale.ROOT))
       .put("recentTransitions", transitionArray(g.recentTransitions()))
       .put("lagMs", lagMsArray(g.lagMs()))
       .put("timeToClose", timeToCloseArray(g.timeToClose()))
@@ -179,7 +180,7 @@ public class McpTools {
         .put("group", g.consumerGroup())
         .put("state", g.state().toMetricValue())
         .put("totalLag", g.totalLag())
-        .put("overallTrend", g.overallTrend().name().toLowerCase())
+        .put("overallTrend", g.overallTrend().name().toLowerCase(Locale.ROOT))
         .put("maxVelocity", maxVelocity(g))
         .put("maxRetentionPercent", maxRetention(g))
         .put("commitStalenessSeconds", g.maxCommitStalenessSeconds()));
@@ -266,7 +267,7 @@ public class McpTools {
     for (LagTrend t : trends) {
       a.add(new JsonObject()
         .put("topic", t.topic())
-        .put("direction", t.direction().name().toLowerCase())
+        .put("direction", t.direction().name().toLowerCase(Locale.ROOT))
         .put("velocity", t.velocity()));
     }
     return a;

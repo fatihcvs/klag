@@ -1,6 +1,7 @@
 package io.github.themoah.klag.model;
 
 import io.github.themoah.klag.model.ConsumerGroupOffsets.TopicPartitionKey;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -74,7 +75,7 @@ public record ConsumerGroupState(
      * @return the state name in lowercase
      */
     public String toMetricValue() {
-      return name().toLowerCase();
+      return name().toLowerCase(Locale.ROOT);
     }
   }
 }
