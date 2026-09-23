@@ -236,6 +236,11 @@ End-to-end tests (k3d + real Kafka, Strimzi matrix) live in `scripts/`. See
 [Build from Source](https://klag.dev/development/build/) and
 [Contributing](https://klag.dev/development/contributing/).
 
+New to the project? Pick a [`good first issue`](https://github.com/themoah/klag/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+or [`hacktoberfest`](https://github.com/themoah/klag/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest) ticket and follow [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Using Klag in production?** Soft ask — [tell us (opt-in)](https://github.com/themoah/klag/issues/96) or see [ADOPTERS.md](ADOPTERS.md).
+
 ---
 
 [![vert.x](https://img.shields.io/badge/vert.x-4.5.34-purple.svg)](https://vertx.io)
