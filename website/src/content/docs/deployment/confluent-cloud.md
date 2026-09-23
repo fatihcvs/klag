@@ -12,43 +12,49 @@ read-only ACLs described in [ACL Permissions](/kafka/acl-permissions/).
 
 Get the bootstrap server from the Confluent Cloud Console under **Cluster >
 Clients**. Keep the API key and secret outside source control and inject them at
-runtime.
-
-For a local process or container, set the Kafka client properties through Klag's
-environment variables:
+runtime. For a local process or container, set the Kafka client properties
+through Klag's environment variables. In a Bash shell, enter both credentials
+without echoing them or putting their values in shell history:
 
 ```bash
 export KAFKA_BOOTSTRAP_SERVERS="<bootstrap-server>:9092"
 export KAFKA_SECURITY_PROTOCOL="SASL_SSL"
 export KAFKA_SASL_MECHANISM="PLAIN"
-export KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username='<kafka-api-key>' password='<kafka-api-secret>';"
+read -r -s -p "Kafka API key: " KAFKA_API_KEY; printf '\n'
+read -r -s -p "Kafka API secret: " KAFKA_API_SECRET; printf '\n'
+export KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username='$KAFKA_API_KEY' password='$KAFKA_API_SECRET';"
+unset KAFKA_API_KEY KAFKA_API_SECRET
 ```
 
-The same variables work with Docker:
+The same exported variables work with Docker. Pass the **variable name** for
+the JAAS config so its value is absent from the `docker run` arguments:
 
 ```bash
 docker run --rm \
-  -e KAFKA_BOOTSTRAP_SERVERS="<bootstrap-server>:9092" \
-  -e KAFKA_SECURITY_PROTOCOL="SASL_SSL" \
-  -e KAFKA_SASL_MECHANISM="PLAIN" \
-  -e KAFKA_SASL_JAAS_CONFIG="org.apache.kafka.common.security.plain.PlainLoginModule required username='<kafka-api-key>' password='<kafka-api-secret>';" \
+  -p 8888:8888 \
+  -e KAFKA_BOOTSTRAP_SERVERS \
+  -e KAFKA_SECURITY_PROTOCOL \
+  -e KAFKA_SASL_MECHANISM \
+  -e KAFKA_SASL_JAAS_CONFIG \
   -e METRICS_REPORTER=prometheus \
   themoah/klag:latest
 ```
 
-The placeholders above are examples only. Prefer your deployment platform's
-secret manager or injected environment variables instead of putting real
-credentials in shell history, manifests, or Git.
+The JAAS config is still visible to anyone with access to the process or
+Docker container environment. Restrict that access, and clear the exported
+variable with `unset KAFKA_SASL_JAAS_CONFIG` when finished. For a long-lived
+deployment, use your platform's secret manager.
 
 ## Helm with an existing Secret
 
 The chart's `kafka.existingSecret` option reads the `jaas-config` key from an
-existing Kubernetes Secret. Create it with the JAAS value assembled from your
-Confluent Cloud API key and secret:
+existing Kubernetes Secret. With the JAAS variable set as above, create the
+Secret from standard input on a Unix-like system; the value does not appear
+in the `kubectl` arguments or a local credentials file:
 
 ```bash
-kubectl create secret generic klag-kafka \
-  --from-literal=jaas-config="org.apache.kafka.common.security.plain.PlainLoginModule required username='<kafka-api-key>' password='<kafka-api-secret>';"
+printf '%s' "$KAFKA_SASL_JAAS_CONFIG" | \
+  kubectl create secret generic klag-kafka --from-file=jaas-config=/dev/stdin
 ```
 
 Install or upgrade Klag with the cluster connection settings and Secret reference:
