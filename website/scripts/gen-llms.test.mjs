@@ -43,6 +43,7 @@ const fixture = [
   '',
   'beta',
   '<Token>',
+  'export EXAMPLE=value',
   ':::note[Literal directive]',
   '```not a closing fence',
   ':::caution[Still literal]',
@@ -117,8 +118,28 @@ async function restoreIfChanged(path, snapshot) {
   }
 }
 
+function outsideFencedBlocks(markdown) {
+  const lines = [];
+  let fence = null;
+  for (const line of markdown.split('\n')) {
+    const normalized = line.replace(/\r$/, '');
+    if (!fence) {
+      const opening = normalized.match(/^ {0,3}(`{3,}|~{3,})/);
+      if (opening) fence = opening[1];
+      else lines.push(line);
+      continue;
+    }
+    const marker = fence[0];
+    if (new RegExp(`^ {0,3}${marker}{${fence.length},}[\\t ]*$`).test(normalized)) {
+      fence = null;
+    }
+  }
+  return lines.join('\n');
+}
+
 test('llms-full removes MDX syntax while preserving component content', () => {
-  assert.doesNotMatch(full, /^(?:import|export)\s/m);
+  assert.doesNotMatch(outsideFencedBlocks(full), /^(?:import|export)\s/m);
+  assert.match(full, /^export EXAMPLE=value\r?$/m);
   assert.doesNotMatch(full, /<\/?(?:PaneSet|Pane)\b/);
   assert.match(full, /Keep the uppercase placeholder <Token> intact\./);
 });
@@ -133,7 +154,7 @@ test('multiline aliased Starlight imports retain semantic tab labels', () => {
 test('fence-like code lines do not close the surrounding fence', () => {
   assert.match(
     full,
-    /```text\nalpha\n\n\nbeta\n<Token>\n:::note\[Literal directive]\n```not a closing fence\n:::caution\[Still literal]\n\[Literal link]\(\/literal\/\)\n```/,
+    /```text\nalpha\n\n\nbeta\n<Token>\nexport EXAMPLE=value\n:::note\[Literal directive]\n```not a closing fence\n:::caution\[Still literal]\n\[Literal link]\(\/literal\/\)\n```/,
   );
 });
 
@@ -247,7 +268,7 @@ test('production corpus generates portable output with critical operational fact
     ]);
     assert.deepEqual(generatedFiles, [generated.index, generated.full]);
 
-    assert.doesNotMatch(generated.full, /^(?:import|export)\s/m);
+    assert.doesNotMatch(outsideFencedBlocks(generated.full), /^(?:import|export)\s/m);
     assert.doesNotMatch(
       generated.full,
       /<\/?(?:Aside|Card|CardGrid|LinkCard|TabItem|Tabs)\b/,

@@ -160,6 +160,7 @@ export default defineConfig({
         {
           label: 'Deployment',
           items: [
+            { label: 'Confluent Cloud', slug: 'deployment/confluent-cloud' },
             { label: 'Kubernetes (Helm)', slug: 'deployment/kubernetes' },
             { label: 'Strimzi', slug: 'deployment/strimzi' },
             { label: 'Native Image', slug: 'deployment/native-image' },
