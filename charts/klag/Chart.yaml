@@ -2,8 +2,8 @@ apiVersion: v2
 name: klag
 description: A Helm chart for Klag - A simple, lightweight Kafka Lag Exporter with pluggable metrics sinks.
 type: application
-version: 0.3.15
-appVersion: "0.2.17"
+version: 0.3.16
+appVersion: "0.2.18"
 home: https://github.com/themoah/klag
 icon: https://avatars.githubusercontent.com/themoah
 sources:
@@ -36,6 +36,8 @@ annotations:
   artifacthub.io/changes: |
     - kind: fixed
       description: Disable multipart file uploads on the MCP endpoint so requests cannot leave uploaded files on disk
+    - kind: fixed
+      description: Keep MCP trend values and consumer group state labels independent of the JVM default locale
     - kind: added
       description: Opt-in METRICS_ASSIGNED_TOPICS_ONLY drops lag for topics a Stable group has abandoned but whose committed offsets have not yet expired; Empty/rebalancing groups keep reporting so outages stay visible
     - kind: fixed
