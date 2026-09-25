@@ -1,5 +1,6 @@
 package io.github.themoah.klag.mcp;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,6 +20,10 @@ import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class McpToolsTest {
 
@@ -168,6 +173,36 @@ class McpToolsTest {
     String text = textOf(tools.call("list_consumer_groups", new JsonObject()));
     assertTrue(text.contains("overallTrend"));
     assertTrue(text.contains("growing"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "tr-TR, GROWING, growing", "tr-TR, SHRINKING, shrinking", "tr-TR, STABLE, stable",
+    "az-AZ, GROWING, growing", "az-AZ, SHRINKING, shrinking", "az-AZ, STABLE, stable",
+    "en-US, GROWING, growing", "en-US, SHRINKING, shrinking", "en-US, STABLE, stable"
+  })
+  @ResourceLock(Resources.LOCALE)
+  void trendLabelsDoNotDependOnDefaultLocale(String languageTag, Direction direction, String expected) {
+    Locale previous = Locale.getDefault();
+    try {
+      Locale.setDefault(Locale.forLanguageTag(languageTag));
+      McpTools tools = new McpTools(storeWith(
+        groupWithTrend("payments", 5000, direction, 42.0, List.of())));
+      JsonObject listed = new JsonObject(textOf(tools.call("list_consumer_groups", new JsonObject())))
+        .getJsonArray("groups").getJsonObject(0);
+      JsonObject ranked = new JsonObject(textOf(tools.call("find_lagging_groups", new JsonObject())))
+        .getJsonArray("groups").getJsonObject(0);
+      JsonObject detail = new JsonObject(textOf(tools.call("get_consumer_group_lag",
+        new JsonObject().put("group", "payments"))));
+
+      assertAll(
+        () -> assertEquals(expected, listed.getString("overallTrend")),
+        () -> assertEquals(expected, ranked.getString("overallTrend")),
+        () -> assertEquals(expected, detail.getString("overallTrend")),
+        () -> assertEquals(expected, detail.getJsonArray("trends").getJsonObject(0).getString("direction")));
+    } finally {
+      Locale.setDefault(previous);
+    }
   }
 
   @Test

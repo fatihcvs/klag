@@ -14,6 +14,8 @@ import java.util.Properties;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 class KafkaClientConfigTest {
 
@@ -196,6 +198,7 @@ class KafkaClientConfigTest {
   }
 
   @Test
+  @ResourceLock(Resources.LOCALE)
   void envBinding_localeIndependentLowercase() {
     Locale previous = Locale.getDefault();
     try {

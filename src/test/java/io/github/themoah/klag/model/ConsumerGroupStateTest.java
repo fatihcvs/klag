@@ -1,9 +1,15 @@
 package io.github.themoah.klag.model;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.themoah.klag.model.ConsumerGroupState.State;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Pins the name-based mapping in {@link State#fromKafkaState(String)}: it exists so klag
@@ -34,5 +40,26 @@ class ConsumerGroupStateTest {
     // Any future state klag does not model must degrade, not throw.
     assertEquals(State.UNKNOWN, State.fromKafkaState("SOME_FUTURE_STATE"));
     assertEquals(State.UNKNOWN, State.fromKafkaState(""));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"tr-TR", "az-AZ", "en-US"})
+  @ResourceLock(Resources.LOCALE)
+  void metricLabelsDoNotDependOnDefaultLocale(String languageTag) {
+    Locale previous = Locale.getDefault();
+    try {
+      Locale.setDefault(Locale.forLanguageTag(languageTag));
+      assertAll(
+        () -> assertEquals("preparing_rebalance", State.PREPARING_REBALANCE.toMetricValue()),
+        () -> assertEquals("completing_rebalance", State.COMPLETING_REBALANCE.toMetricValue()),
+        () -> assertEquals("assigning", State.ASSIGNING.toMetricValue()),
+        () -> assertEquals("reconciling", State.RECONCILING.toMetricValue()),
+        () -> assertEquals("stable", State.STABLE.toMetricValue()),
+        () -> assertEquals("dead", State.DEAD.toMetricValue()),
+        () -> assertEquals("empty", State.EMPTY.toMetricValue()),
+        () -> assertEquals("unknown", State.UNKNOWN.toMetricValue()));
+    } finally {
+      Locale.setDefault(previous);
+    }
   }
 }
