@@ -13,16 +13,28 @@ cannot see your consumer groups. See [MCP Endpoint](/ai/mcp/) for the protocol a
 
 ## 1. Start a disposable workload
 
-From a Klag checkout, with Docker Compose available and ports 9092 and 8888 free,
-save this as `compose.eval.yaml`:
+From a Klag checkout, with Docker Compose supporting `!override`, OpenSSL and
+ports 9092 and 8888 free, create a temporary token in your shell:
+
+```bash
+export MCP_AUTH_TOKEN="$(openssl rand -hex 32)"
+```
+
+Save this as `compose.eval.yaml`. The override replaces the sample's public port
+bindings with loopback-only bindings:
 
 ```yaml
 services:
+  kafka:
+    ports: !override
+      - "127.0.0.1:9092:9092"
   klag:
+    ports: !override
+      - "127.0.0.1:8888:8888"
     environment:
       METRICS_REPORTER: prometheus
       MCP_ENABLED: "true"
-      MCP_AUTH_TOKEN: "local-evaluation-only"
+      MCP_AUTH_TOKEN: "${MCP_AUTH_TOKEN:?Set a temporary evaluation token first}"
 ```
 
 Start only the sample services used by this checklist:
@@ -32,9 +44,8 @@ docker compose -p klag-eval -f docker-compose.yaml -f compose.eval.yaml up -d --
 ```
 
 The repository's sample producer writes to `test-topic`, and the slow consumer
-uses `slow-consumer-group`. These are disposable sample data. Run on an isolated
-development machine; the sample Compose ports are published to the host and the
-token above is public test data, not a deployment credential. Outside a local
+uses `slow-consumer-group`. These are disposable sample data. Keep the generated
+token private and use the same shell for the requests below. Outside a local
 evaluation, use HTTPS and a private token. No hosted AI account is required.
 
 ## 2. Verify both data surfaces
@@ -48,7 +59,7 @@ evaluation, use HTTPS and a private token. No hosted AI account is required.
 ```bash
 curl -fsS http://localhost:8888/mcp \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer local-evaluation-only' \
+  -H "Authorization: Bearer ${MCP_AUTH_TOKEN}" \
   --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
 ```
 
@@ -117,6 +128,7 @@ Never report a stale snapshot, missing metric or unexecuted scenario as a pass.
 
 ```bash
 docker compose -p klag-eval -f docker-compose.yaml -f compose.eval.yaml down
+unset MCP_AUTH_TOKEN
 ```
 
 The command targets this disposable Compose project. Do not substitute the name
